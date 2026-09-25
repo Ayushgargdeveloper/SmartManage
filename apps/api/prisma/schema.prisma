@@ -1,0 +1,556 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CompanyStatus {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+  ARCHIVED
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  TEAM_LEADER
+  EMPLOYEE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  DELAYED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  ON_HOLD
+  REVIEW
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  ON_HOLD
+}
+
+enum BlockerStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  ESCALATED
+}
+
+enum BlockerCategory {
+  TECHNICAL
+  DEPENDENCY
+  CLIENT
+  APPROVAL
+  RESOURCE
+  ACCESS
+  OTHER
+}
+
+enum BlockerSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  DAILY_REMINDER
+  MISSING_UPDATE
+  OVERDUE_TASK
+  BLOCKER_ESCALATION
+  REPORT_READY
+  COMMENT
+  SYSTEM
+}
+
+enum AIMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ReportType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  EMPLOYEE
+  TEAM
+  PROJECT
+  DEPARTMENT
+  CUSTOM
+}
+
+model Company {
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  status           CompanyStatus    @default(TRIAL)
+  timezone         String           @default("UTC")
+  workweek         Json?
+  dailyCutoff      String           @default("18:00")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  archivedAt       DateTime?
+  roles            Role[]
+  users            User[]
+  departments      Department[]
+  teams            Team[]
+  projects         Project[]
+  tasks            Task[]
+  dailyProgress    DailyProgress[]
+  blockers         Blocker[]
+  attachments      Attachment[]
+  comments         Comment[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  aiConversations  AIConversation[]
+  generatedReports GeneratedReport[]
+}
+
+model Role {
+  id          String     @id @default(cuid())
+  companyId   String?
+  name        RoleName
+  description String
+  permissions String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company?   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  users       UserRole[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model User {
+  id                    String             @id @default(cuid())
+  companyId             String?
+  email                 String             @unique
+  name                  String
+  title                 String?
+  passwordHash          String
+  isActive              Boolean            @default(true)
+  lastLoginAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  archivedAt            DateTime?
+  company               Company?           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roles                 UserRole[]
+  departmentMemberships DepartmentMember[]
+  teamMemberships       TeamMember[]
+  ledTeams              Team[]             @relation("TeamLeader")
+  ownedProjects         Project[]          @relation("ProjectOwner")
+  projectMemberships    ProjectMember[]
+  assignedTasks         Task[]             @relation("TaskAssignee")
+  reportedTasks         Task[]             @relation("TaskReporter")
+  dailyProgress         DailyProgress[]
+  blockers              Blocker[]          @relation("BlockerEmployee")
+  resolvedBlockers      Blocker[]          @relation("BlockerResolver")
+  attachments           Attachment[]
+  comments              Comment[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  aiConversations       AIConversation[]
+  aiMessages            AIMessage[]
+  generatedReports      GeneratedReport[]
+
+  @@index([companyId, isActive])
+  @@index([companyId, archivedAt])
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model Department {
+  id          String             @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  archivedAt  DateTime?
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  members     DepartmentMember[]
+  teams       Team[]
+  projects    Project[]
+
+  @@unique([companyId, name])
+  @@index([companyId, archivedAt])
+}
+
+model DepartmentMember {
+  departmentId String
+  userId       String
+  createdAt    DateTime   @default(now())
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([departmentId, userId])
+  @@index([userId])
+}
+
+model Team {
+  id           String       @id @default(cuid())
+  companyId    String
+  departmentId String?
+  leaderId     String?
+  name         String
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  archivedAt   DateTime?
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  leader       User?        @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  members      TeamMember[]
+  projects     Project[]
+
+  @@unique([companyId, name])
+  @@index([companyId, departmentId])
+  @@index([leaderId])
+}
+
+model TeamMember {
+  teamId    String
+  userId    String
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+}
+
+model Project {
+  id               String            @id @default(cuid())
+  companyId        String
+  departmentId     String?
+  teamId           String?
+  ownerId          String?
+  name             String
+  description      String?
+  startDate        DateTime?
+  targetDate       DateTime?
+  status           ProjectStatus     @default(PLANNING)
+  priority         Priority          @default(MEDIUM)
+  progress         Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  archivedAt       DateTime?
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department       Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  team             Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  owner            User?             @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members          ProjectMember[]
+  modules          ProjectModule[]
+  tasks            Task[]
+  dailyProgress    DailyProgress[]
+  blockers         Blocker[]
+  attachments      Attachment[]
+  comments         Comment[]
+  generatedReports GeneratedReport[]
+
+  @@unique([companyId, name])
+  @@index([companyId, status, priority])
+  @@index([companyId, targetDate])
+  @@index([ownerId])
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
+}
+
+model ProjectModule {
+  id          String    @id @default(cuid())
+  companyId   String
+  projectId   String
+  name        String
+  description String?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@unique([projectId, name])
+  @@index([companyId, projectId])
+}
+
+model Task {
+  id             String          @id @default(cuid())
+  companyId      String
+  projectId      String
+  moduleId       String?
+  assigneeId     String?
+  reporterId     String?
+  title          String
+  description    String?
+  status         TaskStatus      @default(NOT_STARTED)
+  priority       Priority        @default(MEDIUM)
+  startDate      DateTime?
+  dueDate        DateTime?
+  estimatedHours Decimal?        @db.Decimal(8, 2)
+  actualHours    Decimal?        @db.Decimal(8, 2)
+  progress       Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  archivedAt     DateTime?
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  module         ProjectModule?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  assignee       User?           @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporter       User?           @relation("TaskReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  dailyProgress  DailyProgress[]
+  blockers       Blocker[]
+  attachments    Attachment[]
+  comments       Comment[]
+
+  @@index([companyId, status, priority])
+  @@index([companyId, dueDate])
+  @@index([projectId, status])
+  @@index([assigneeId, status])
+  @@index([reporterId])
+}
+
+model DailyProgress {
+  id              String         @id @default(cuid())
+  companyId       String
+  userId          String
+  projectId       String
+  taskId          String?
+  workDate        DateTime       @db.Date
+  workCompleted   String
+  status          ProgressStatus
+  progressPercent Int            @default(0)
+  timeSpentHours  Decimal        @db.Decimal(8, 2)
+  hasBlocker      Boolean        @default(false)
+  tomorrowPlan    String?
+  externalLinks   String[]
+  editHistory     Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  blockers        Blocker[]
+  attachments     Attachment[]
+  comments        Comment[]
+
+  @@unique([companyId, userId, taskId, workDate])
+  @@index([companyId, workDate])
+  @@index([companyId, projectId, workDate])
+  @@index([companyId, userId, workDate])
+  @@index([taskId])
+}
+
+model Blocker {
+  id              String          @id @default(cuid())
+  companyId       String
+  employeeId      String
+  projectId       String
+  taskId          String?
+  dailyProgressId String?
+  resolverId      String?
+  description     String
+  category        BlockerCategory
+  status          BlockerStatus   @default(OPEN)
+  severity        BlockerSeverity @default(MEDIUM)
+  resolution      String?
+  resolvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee        User            @relation("BlockerEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task            Task?           @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  dailyProgress   DailyProgress?  @relation(fields: [dailyProgressId], references: [id], onDelete: SetNull)
+  resolver        User?           @relation("BlockerResolver", fields: [resolverId], references: [id], onDelete: SetNull)
+  attachments     Attachment[]
+  comments        Comment[]
+
+  @@index([companyId, status, severity])
+  @@index([companyId, projectId, status])
+  @@index([employeeId, status])
+  @@index([resolverId])
+  @@index([createdAt])
+}
+
+model Attachment {
+  id              String         @id @default(cuid())
+  companyId       String
+  uploaderId      String
+  projectId       String?
+  taskId          String?
+  dailyProgressId String?
+  blockerId       String?
+  fileName        String
+  storageKey      String
+  mimeType        String
+  sizeBytes       Int
+  createdAt       DateTime       @default(now())
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploader        User           @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  dailyProgress   DailyProgress? @relation(fields: [dailyProgressId], references: [id], onDelete: SetNull)
+  blocker         Blocker?       @relation(fields: [blockerId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([uploaderId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([dailyProgressId])
+  @@index([blockerId])
+}
+
+model Comment {
+  id              String         @id @default(cuid())
+  companyId       String
+  authorId        String
+  projectId       String?
+  taskId          String?
+  dailyProgressId String?
+  blockerId       String?
+  body            String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  dailyProgress   DailyProgress? @relation(fields: [dailyProgressId], references: [id], onDelete: SetNull)
+  blocker         Blocker?       @relation(fields: [blockerId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([authorId])
+  @@index([taskId])
+  @@index([dailyProgressId])
+  @@index([blockerId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  companyId String
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String?
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([actorId])
+  @@index([entityType, entityId])
+}
+
+model AIConversation {
+  id        String      @id @default(cuid())
+  companyId String
+  userId    String
+  title     String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
+
+  @@index([companyId, userId, updatedAt])
+}
+
+model AIMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  userId         String?
+  role           AIMessageRole
+  content        String
+  evidence       Json?
+  tokenCount     Int?
+  createdAt      DateTime       @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([userId])
+}
+
+model GeneratedReport {
+  id          String     @id @default(cuid())
+  companyId   String
+  creatorId   String?
+  projectId   String?
+  type        ReportType
+  title       String
+  periodStart DateTime?  @db.Date
+  periodEnd   DateTime?  @db.Date
+  filters     Json?
+  content     Json
+  fileKey     String?
+  createdAt   DateTime   @default(now())
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator     User?      @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, type, createdAt])
+  @@index([creatorId])
+  @@index([projectId])
+}

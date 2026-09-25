@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+*.tsbuildinfo
+apps/api/src/generated
+apps/api/prisma/generated
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile.local
