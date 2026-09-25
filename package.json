@@ -34,10 +34,5 @@
   "engines": {
     "node": ">=20.11.0",
     "npm": ">=10.0.0"
-  },
-  "dependencies": {
-    "@nestjs/jwt": "^11.0.2",
-    "bcryptjs": "^3.0.3",
-    "recharts": "^3.10.0"
   }
 }
