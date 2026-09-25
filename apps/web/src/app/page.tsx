@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeftToLine,
+  ArrowRight,
   ArrowRightToLine,
   Bell,
   Bot,
@@ -15,9 +16,13 @@ import {
   Clock,
   Command,
   Download,
+  Eye,
+  EyeOff,
   FileText,
   Filter,
   Loader2,
+  LockKeyhole,
+  Mail,
   Menu,
   MessagesSquare,
   Moon,
@@ -25,11 +30,14 @@ import {
   RefreshCw,
   Search,
   Send,
+  ShieldCheck,
+  Sparkles,
   Sun,
   Trash2,
   Undo2,
   Upload,
   UserRound,
+  UsersRound,
   X,
 } from 'lucide-react';
 import {
@@ -216,6 +224,14 @@ export default function WorkPulsePrototype() {
     setMobileNavOpen(false);
   }
 
+  if (roleKey === 'auth') {
+    return (
+      <main className="min-h-screen bg-[#07111f] text-white">
+        <AuthPrototype onLogin={handleLogin} />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
@@ -365,16 +381,12 @@ export default function WorkPulsePrototype() {
 
           <div className="flex-1 overflow-hidden">
             <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6">
-              {roleKey === 'auth' ? (
-                <AuthPrototype onLogin={handleLogin} />
-              ) : (
-                <ProductPage
-                  page={activePage}
-                  role={roleKey}
-                  session={session}
-                  onNavigate={setActivePage}
-                />
-              )}
+              <ProductPage
+                page={activePage}
+                role={roleKey}
+                session={session}
+                onNavigate={setActivePage}
+              />
             </div>
           </div>
         </section>
@@ -6994,6 +7006,7 @@ function PlatformAuditList({ rows }: { rows: PlatformOverview['recentAuditLogs']
 function AuthPrototype({ onLogin }: { onLogin: (session: SessionState) => void }) {
   const [email, setEmail] = useState('ayushgarg.official07@gmail.com');
   const [password, setPassword] = useState('workpulse-dev-pass');
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState(
     'Use the seeded development credentials after the database is available.',
@@ -7016,60 +7029,181 @@ function AuthPrototype({ onLogin }: { onLogin: (session: SessionState) => void }
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-8rem)] place-items-center">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-lg border bg-card shadow-sm lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="bg-primary p-8 text-primary-foreground">
-          <p className="text-sm opacity-80">Secure access</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-normal">
-            Log in to {productConfig.name}
-          </h2>
-          <p className="mt-4 text-sm leading-6 opacity-80">
-            Sign in once. Your dashboard and navigation come from your backend role.
-          </p>
+    <div className="relative min-h-screen overflow-hidden bg-[#07111f]">
+      <div className="auth-grid absolute inset-0 opacity-30" aria-hidden="true" />
+      <div
+        className="absolute -left-32 top-[-10rem] h-[32rem] w-[32rem] rounded-full bg-cyan-400/20 blur-[120px]"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -bottom-52 right-[-7rem] h-[38rem] w-[38rem] rounded-full bg-violet-500/20 blur-[140px]"
+        aria-hidden="true"
+      />
+
+      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/15 bg-white/10 shadow-lg shadow-cyan-500/10 backdrop-blur-xl">
+            <Command className="h-5 w-5 text-cyan-300" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-base font-bold tracking-tight text-white">{productConfig.name}</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
+              Work intelligence
+            </p>
+          </div>
         </div>
-        <form className="space-y-4 p-8" onSubmit={handleSubmit}>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Work email</span>
-            <input
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              value={email}
-              type="email"
-              autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Password</span>
-            <input
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              value={password}
-              type="password"
-              autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-          <button
-            type="submit"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
-            disabled={status === 'loading'}
-          >
-            {status === 'loading' ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
-            Sign in
-          </button>
-          <p
-            className={`rounded-md p-3 text-sm ${
-              status === 'error'
-                ? 'bg-danger/10 text-danger'
-                : status === 'success'
-                  ? 'bg-success/10 text-success'
-                  : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            {message}
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-slate-300 backdrop-blur-xl">
+          <ShieldCheck className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
+          Secure access
+        </div>
+      </header>
+
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-6.5rem)] w-full max-w-7xl items-center gap-12 px-5 pb-12 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:px-10 lg:pb-20">
+        <section className="hidden max-w-2xl lg:block">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-1.5 text-xs font-semibold text-cyan-200 backdrop-blur-xl">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            Your workday, intelligently organized
+          </div>
+          <h1 className="max-w-xl text-5xl font-bold leading-[1.06] tracking-[-0.045em] text-white xl:text-6xl">
+            Turn daily work into{' '}
+            <span className="bg-gradient-to-r from-cyan-300 via-sky-300 to-violet-300 bg-clip-text text-transparent">
+              clear momentum.
+            </span>
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+            One intelligent workspace to align your team, surface blockers, and keep every project
+            moving forward.
           </p>
-        </form>
+
+          <div className="mt-10 grid max-w-xl grid-cols-3 gap-3">
+            {[
+              { icon: UsersRound, value: 'One team', label: 'Fully aligned' },
+              { icon: Sparkles, value: 'AI briefs', label: 'Instant clarity' },
+              { icon: ShieldCheck, value: 'Role-based', label: 'Secure access' },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.value}
+                  className="rounded-2xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-xl"
+                >
+                  <Icon className="mb-3 h-5 w-5 text-cyan-300" aria-hidden="true" />
+                  <p className="text-sm font-semibold text-white">{item.value}</p>
+                  <p className="mt-1 text-xs text-slate-400">{item.label}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-10 flex items-center gap-3 text-sm text-slate-400">
+            <div className="flex -space-x-2">
+              {['AG', 'MS', 'RK'].map((initials, index) => (
+                <span
+                  key={initials}
+                  className={`grid h-8 w-8 place-items-center rounded-full border-2 border-[#07111f] text-[10px] font-bold text-white ${
+                    index === 0 ? 'bg-cyan-600' : index === 1 ? 'bg-violet-600' : 'bg-emerald-600'
+                  }`}
+                >
+                  {initials}
+                </span>
+              ))}
+            </div>
+            Built for teams that move fast
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[30rem]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.075] p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
+            <div className="rounded-[1.6rem] border border-white/[0.08] bg-[#0b1627]/90 px-6 py-7 sm:px-9 sm:py-9">
+              <div className="mb-8">
+                <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 to-sky-500 text-[#07111f] shadow-lg shadow-cyan-500/20">
+                  <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <p className="text-sm font-medium text-cyan-300">Welcome back</p>
+                <h2 className="mt-1 text-3xl font-bold tracking-tight text-white">
+                  Sign in to your workspace
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  Enter your details to continue to {productConfig.name}.
+                </p>
+              </div>
+
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-200">Work email</span>
+                  <span className="group flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] px-4 transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.07] focus-within:ring-4 focus-within:ring-cyan-400/10">
+                    <Mail className="h-4 w-4 shrink-0 text-slate-500 transition group-focus-within:text-cyan-300" />
+                    <input
+                      className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+                      value={email}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@company.com"
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-200">Password</span>
+                  <span className="group flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.045] px-4 transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.07] focus-within:ring-4 focus-within:ring-cyan-400/10">
+                    <LockKeyhole className="h-4 w-4 shrink-0 text-slate-500 transition group-focus-within:text-cyan-300" />
+                    <input
+                      className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+                      value={password}
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="rounded-lg p-1 text-slate-500 transition hover:bg-white/10 hover:text-slate-200"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                      )}
+                    </button>
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-300 to-sky-400 px-4 text-sm font-bold text-[#07111f] shadow-lg shadow-cyan-500/15 transition hover:-translate-y-0.5 hover:shadow-cyan-400/25 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={status === 'loading'}
+                >
+                  {status === 'loading' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  )}
+                  {status === 'loading' ? 'Signing in...' : 'Sign in securely'}
+                </button>
+
+                <div
+                  className={`flex gap-3 rounded-xl border p-3 text-xs leading-5 ${
+                    status === 'error'
+                      ? 'border-red-400/20 bg-red-400/10 text-red-200'
+                      : status === 'success'
+                        ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200'
+                        : 'border-white/[0.07] bg-white/[0.035] text-slate-400'
+                  }`}
+                >
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+                  <span>{message}</span>
+                </div>
+              </form>
+
+              <p className="mt-7 text-center text-xs text-slate-500">
+                Protected by enterprise-grade access controls
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
