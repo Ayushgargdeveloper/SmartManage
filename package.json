@@ -19,7 +19,6 @@
     "db:validate": "npm run db:validate --workspace @workpulse/api",
     "db:migrate": "npm run db:migrate --workspace @workpulse/api",
     "db:seed": "npm run db:seed --workspace @workpulse/api",
-    "postinstall": "npm run db:generate",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

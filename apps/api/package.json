@@ -12,7 +12,8 @@
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:validate": "prisma validate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
-    "db:seed": "prisma db seed --schema prisma/schema.prisma"
+    "db:seed": "prisma db seed --schema prisma/schema.prisma",
+    "postinstall": "npm run db:generate"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.5",
