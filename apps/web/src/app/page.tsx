@@ -7024,7 +7024,11 @@ function AuthPrototype({ onLogin }: { onLogin: (session: SessionState) => void }
       setMessage(`Signed in as ${response.user.name}.`);
     } catch (error: unknown) {
       setStatus('error');
-      setMessage(error instanceof ApiError ? error.message : 'Unable to sign in right now.');
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        setMessage('Incorrect email or password. Please try again.');
+      } else {
+        setMessage(error instanceof ApiError ? error.message : 'Unable to sign in right now.');
+      }
     }
   }
 

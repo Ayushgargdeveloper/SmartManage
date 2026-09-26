@@ -26,4 +26,27 @@ describe('frontend login fallback', () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it('returns a clear credentials error for an incorrect password', async () => {
+    process.env.NEXT_PUBLIC_ENABLE_DEMO_FALLBACK = 'true';
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new TypeError('fetch failed');
+    };
+
+    try {
+      const { ApiError, login } = await import('../src/lib/api');
+
+      await assert.rejects(
+        login('ayushgarg.official07@gmail.com', 'wrong-password'),
+        (error: unknown) =>
+          error instanceof ApiError &&
+          error.status === 401 &&
+          error.message === 'Incorrect email or password. Please try again.',
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

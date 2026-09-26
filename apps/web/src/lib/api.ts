@@ -610,6 +610,10 @@ export async function login(email: string, password: string): Promise<LoginRespo
     const demoLogin = getDemoLogin(email, password);
     if (demoLogin) return demoLogin;
 
+    if (!(error instanceof ApiError) || error.status === 401 || error.status === 403) {
+      throw new ApiError('Incorrect email or password. Please try again.', 401);
+    }
+
     throw error;
   }
 }
